@@ -1,0 +1,66 @@
+# systemd template unit for the DDJ API.
+#
+# One template serves both environments. The instance name is the environment
+# (`ddj-api@staging`, `ddj-api@production`), so the two cannot drift apart in
+# their supervision settings — only their config differs.
+#
+# Install: scripts/setup-environments.sh copies this to
+# /etc/systemd/system/ddj-api@.service and enables the instances.
+
+[Unit]
+Description=DDJ API (%i)
+Documentation=file:///opt/ddj/repo/docs/release.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ddj-%i
+Group=ddj-%i
+
+WorkingDirectory=/srv/ddj/%i/current
+# `current` is a symlink that deploy.sh moves. Read the environment file and the
+# entry point through it so an activation is just the symlink swap.
+EnvironmentFile=/srv/ddj/%i/shared/.env
+
+ExecStart=/usr/bin/node /srv/ddj/%i/current/api/server.js
+
+# The service binds its own port from EnvironmentFile (DDJ_PORT), one per
+# environment. See scripts/environments.sh for the port map.
+
+Restart=always
+RestartSec=2
+# If it restarts more than 5 times in 60s, stop trying. A crash loop burns CPU
+# and fills the log without ever recovering; this makes it visible instead.
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+# Let in-flight requests finish on SIGTERM. server.ts handles the signal; this
+# is how long systemd waits before escalating to SIGKILL.
+KillSignal=SIGTERM
+TimeoutStopSec=20
+
+StandardOutput=append:/var/log/ddj/%i/api.log
+StandardError=append:/var/log/ddj/%i/api.log
+
+# --- Hardening ---------------------------------------------------------------
+# The service is a plain HTTP server: it needs to read its release directory and
+# open a port, nothing more.
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+RestrictRealtime=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+# ProtectSystem=strict makes the filesystem read-only, so allow exactly the two
+# paths the service legitimately writes: its release dir (logs) and /tmp.
+ReadWritePaths=/srv/ddj/%i /var/log/ddj/%i
+
+[Install]
+WantedBy=multi-user.target

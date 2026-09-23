@@ -1,0 +1,69 @@
+name: CI
+
+# Runs on every push, on every branch. Green means green: the deploy job is
+# gated on this workflow succeeding, so a red build cannot reach an environment.
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+# A newer push to the same branch makes the in-flight run irrelevant. Cancelling
+# it frees the runner instead of leaving two builds racing to report.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    name: Build and test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+        with:
+          # Full history so the commit SHA in build metadata is always resolvable.
+          fetch-depth: 0
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      # The pipeline itself lives in scripts/ci.sh so it can be run identically
+      # on a laptop with `pnpm ci`. This job only provides the runner.
+      - name: Run CI pipeline
+        run: ./scripts/ci.sh
+
+      - name: Upload build artifact
+        if: github.event_name == 'push'
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-build-${{ github.sha }}
+          path: |
+            apps/api/dist
+            apps/api/build-meta.json
+            packages/shared/dist
+            package.json
+            pnpm-lock.yaml
+          retention-days: 14
+
+  # Placeholder for the deploy job. It is deliberately not wired to a real
+  # environment yet: there is no production substrate provisioned, and a deploy
+  # job that silently no-ops is worse than an obviously absent one.
+  #
+  # When the production target is chosen, this job needs a secret and these lines:
+  #   needs: build-and-test
+  #   if: github.ref == 'refs/heads/main'
+  #   environment: production
+  # and a step that calls scripts/deploy.sh with the artifact above.
