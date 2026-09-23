@@ -57,7 +57,13 @@ ProtectControlGroups=true
 RestrictSUIDSGID=true
 RestrictRealtime=true
 LockPersonality=true
-MemoryDenyWriteExecute=true
+
+# Deliberately NOT set: MemoryDenyWriteExecute. V8's JIT compiles JavaScript to
+# machine code at runtime and needs memory that is both writable and executable,
+# so denying W^X kills the process at startup with SIGTRAP before any of our code
+# runs. It looks like an instant, unexplained crash loop. The rest of the
+# hardening above is compatible with Node and is where the real value is.
+
 # ProtectSystem=strict makes the filesystem read-only, so allow exactly the two
 # paths the service legitimately writes: its release dir (logs) and /tmp.
 ReadWritePaths=/srv/ddj/%i /var/log/ddj/%i

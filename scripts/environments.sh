@@ -22,12 +22,14 @@ ddj_load_environment() {
   case "$env_name" in
     staging)
       DDJ_ENV_PORT=3001
-      DDJ_ENV_UNIT="ddj-api-staging"
+      # Template unit `ddj-api@.service` instantiated with the environment name,
+      # so both environments share one unit definition.
+      DDJ_ENV_UNIT="ddj-api@staging"
       DDJ_ENV_SERVICE_USER="ddj-staging"
       ;;
     production)
       DDJ_ENV_PORT=3002
-      DDJ_ENV_UNIT="ddj-api-production"
+      DDJ_ENV_UNIT="ddj-api@production"
       DDJ_ENV_SERVICE_USER="ddj-production"
       ;;
     *)

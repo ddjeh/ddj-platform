@@ -110,15 +110,41 @@ deployedAt=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 environment=$ENV_NAME
 EOF
 
-# Production dependencies at the release root, so `node api/server.js` resolves
-# fastify and pg from a stable, versioned location.
-cp package.json "$RELEASE_DIR/package.json"
-[ -f pnpm-lock.yaml ] && cp pnpm-lock.yaml "$RELEASE_DIR/pnpm-lock.yaml"
-( cd "$RELEASE_DIR" && pnpm install --prod --ignore-scripts --frozen-lockfile >/dev/null 2>&1 ) || \
-  ( cd "$RELEASE_DIR" && pnpm install --prod --ignore-scripts >/dev/null 2>&1 ) || {
-    fail "could not install production dependencies for the release"
+# The release needs its own resolvable node_modules, because the service runs
+# from /srv and cannot reach the workspace's. Copy the app's manifest — not the
+# workspace root's, which declares no runtime dependencies at all — and install
+# the `dependencies` it names.
+#
+# Note this install is not a `pnpm install`: the app's manifest points
+# @ddj/shared at `workspace:*`, which only resolves inside the workspace. The
+# shared package is already vendored as ./shared above, so the manifest is
+# rewritten to reference that copy and a plain npm install is used.
+log "installing runtime dependencies"
+node -e '
+  const fs = require("node:fs");
+  const manifest = JSON.parse(fs.readFileSync("apps/api/package.json", "utf8"));
+  const deps = { ...(manifest.dependencies ?? {}) };
+  if (deps["@ddj/shared"]) deps["@ddj/shared"] = "file:./shared";
+  fs.writeFileSync(
+    process.argv[1],
+    JSON.stringify({ name: manifest.name, version: manifest.version, type: "module", private: true, dependencies: deps }, null, 2) + "\n",
+  );
+' "$RELEASE_DIR/package.json" || { fail "could not write the release manifest"; exit 1; }
+
+( cd "$RELEASE_DIR" && npm install --omit=dev --no-audit --no-fund --ignore-scripts >/dev/null 2>&1 ) || {
+  fail "could not install production dependencies for the release"
+  exit 1
+}
+
+# Prove the install actually produced the runtime dependencies. An install that
+# silently resolves nothing leaves a service that only fails once it is already
+# live, which is the failure this whole health gate exists to prevent.
+for required in fastify; do
+  if [ ! -d "$RELEASE_DIR/node_modules/$required" ]; then
+    fail "runtime dependency '$required' is not present in the release after install"
     exit 1
-  }
+  fi
+done
 
 # --- Activate ----------------------------------------------------------------
 PREVIOUS_RELEASE=""
