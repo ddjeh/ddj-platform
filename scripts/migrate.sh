@@ -82,6 +82,22 @@ else
   log "database $DDJ_ENV_DATABASE already exists"
 fi
 
+# Close the default CONNECT grant.
+#
+# PostgreSQL grants CONNECT on a new database to PUBLIC. The staging role could
+# therefore open a connection to production's database — and, once there, be
+# refused everything, but a connection slot is itself the resource. A
+# compromised staging credential draining production's connection pool is a
+# denial of service across the environment boundary.
+#
+# Schema grants already stop a cross-environment read or write; this makes the
+# boundary structural rather than a side effect of those grants, which is the
+# version that survives someone adding a table without thinking about it.
+psql_super <<SQL
+REVOKE CONNECT ON DATABASE "$DDJ_ENV_DATABASE" FROM PUBLIC;
+GRANT CONNECT ON DATABASE "$DDJ_ENV_DATABASE" TO "$DDJ_ENV_SERVICE_USER";
+SQL
+
 # The bookkeeping table lives in the database it describes, for the reason above.
 psql_super <<'SQL'
 CREATE TABLE IF NOT EXISTS schema_migrations (
