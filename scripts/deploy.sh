@@ -84,15 +84,14 @@ RELEASE_DIR="$DDJ_ENV_RELEASES/$RELEASE_ID"
 
 # The environment file persists across releases, so it lives in shared/ and is
 # never overwritten by a deploy.
+#
+# Ensured rather than assumed: a host restored from a backup, or an environment
+# added since the last setup run, would otherwise deploy a service that starts
+# with no database URL and no token — and in staging or production that is a
+# refusal to start, after the release directory is already cut.
 if [ ! -f "$DDJ_ENV_ENVFILE" ]; then
   log "writing initial environment file"
-  cat > "$DDJ_ENV_ENVFILE" <<EOF
-DDJ_ENV=$ENV_NAME
-DDJ_PORT=$DDJ_ENV_PORT
-DDJ_HOST=$DDJ_ENV_HOST
-DDJ_LOG_LEVEL=info
-EOF
-  chmod 600 "$DDJ_ENV_ENVFILE"
+  ddj_write_env_file
 fi
 
 mkdir -p "$RELEASE_DIR"
@@ -145,6 +144,26 @@ for required in fastify; do
     exit 1
   fi
 done
+
+# --- Migrate -----------------------------------------------------------------
+#
+# Before activation, and therefore before the new code can serve a request. A
+# schema that is behind the code is the failure mode where a deploy looks healthy
+# and then breaks on the first write.
+#
+# This runs from the repository rather than from the release directory, and takes
+# the environment name: the migrations are the same for every environment, and
+# the release directory is an artifact the service runs from, not a place to keep
+# operational scripts.
+#
+# The schema is expected to be compatible with both the outgoing and incoming
+# code for at least one release, which is what makes the rollback below safe — a
+# rollback restores code, never schema.
+log "applying database migrations"
+if ! ./scripts/migrate.sh "$ENV_NAME"; then
+  fail "migrations did not apply; nothing was activated and $DDJ_ENV_UNIT is still running the previous release"
+  exit 1
+fi
 
 # --- Activate ----------------------------------------------------------------
 PREVIOUS_RELEASE=""

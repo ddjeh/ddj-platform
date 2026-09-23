@@ -30,6 +30,10 @@ const TEST_CONFIG: Config = {
   host: '127.0.0.1',
   logLevel: 'fatal',
   databaseUrl: undefined,
+  // `test` is a tokenless environment, so the notes guards are not installed and
+  // these tests exercise the health and version surface directly. The guarded
+  // path is covered where the token is: `notes.test.ts`.
+  apiToken: undefined,
 };
 
 /** A build as CI produces one: a real commit SHA, not `unknown`. */
@@ -174,10 +178,13 @@ describe('GET /', () => {
     const response = await appFor().inject({ method: 'GET', url: '/' });
 
     expect(response.statusCode).toBe(200);
+    // Deliberately exhaustive rather than a subset: this list is the discovery
+    // surface, and a new endpoint appearing here without its auth and its tests
+    // should be an intentional edit to this assertion.
     expect(response.json()).toMatchObject({
       service: '@ddj/api',
       environment: 'test',
-      endpoints: ['/health', '/health/ready', '/version'],
+      endpoints: ['/health', '/health/ready', '/version', '/notes'],
     });
   });
 });

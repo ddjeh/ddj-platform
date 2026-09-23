@@ -64,18 +64,15 @@ for ENV_NAME in $(ddj_environment_names); do
 
   mkdir -p "$DDJ_ENV_RELEASES" "$DDJ_ENV_SHARED" "$DDJ_ENV_LOG_DIR"
 
-  if [ ! -f "$DDJ_ENV_ENVFILE" ]; then
-    cat > "$DDJ_ENV_ENVFILE" <<EOF
-DDJ_ENV=$ENV_NAME
-DDJ_PORT=$DDJ_ENV_PORT
-DDJ_HOST=$DDJ_ENV_HOST
-DDJ_LOG_LEVEL=info
-EOF
-    chmod 640 "$DDJ_ENV_ENVFILE"
-    echo "    wrote $DDJ_ENV_ENVFILE"
-  else
-    echo "    $DDJ_ENV_ENVFILE exists, left alone"
-  fi
+  # Credentials, the database role, and the environment file. Shared with
+  # deploy.sh so the two cannot disagree about what the file contains or about
+  # which secrets must survive a re-run.
+  echo "    provisioning credentials and $DDJ_ENV_ENVFILE"
+  ddj_write_env_file
+
+  # The database itself is created by migrate.sh, which runs before the service
+  # restarts. That keeps creation and migration in one place; this script only
+  # has to guarantee the role exists to own it.
 
   chown -R "$DDJ_ENV_SERVICE_USER:$DDJ_ENV_SERVICE_USER" \
     "$DDJ_ENV_ROOT" "$DDJ_ENV_LOG_DIR"

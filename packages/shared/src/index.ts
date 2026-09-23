@@ -16,4 +16,15 @@ export {
   type ReadinessStatus,
 } from './build-info.js';
 
+export {
+  MAX_NOTE_BODY_LENGTH,
+  type ApiErrorBody,
+  type ApiErrorCode,
+  type CreateNoteRequest,
+  type Note,
+  type NoteList,
+} from './note.js';
+
+export { parseCreateNoteRequest, parseNote } from './note-validate.js';
+
 export { BUILD_INFO_KEYS, ContractError, parseBuildInfo } from './validate.js';

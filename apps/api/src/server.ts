@@ -7,12 +7,16 @@
 
 import { createApp, SERVICE_VERSION } from './app.js';
 import { createBuildInfo } from './build-info.js';
-import { ConfigError, loadConfig } from './config.js';
+import { assertAuthConfigured, ConfigError, loadConfig } from './config.js';
 
 async function main(): Promise<void> {
   let config;
   try {
     config = loadConfig();
+    // Checked here as well as in loadConfig's own parsers because this is a
+    // cross-field rule: it is about the environment and the token together, and
+    // it is the rule that decides whether the guards get installed at all.
+    assertAuthConfigured(config);
   } catch (error) {
     // A malformed environment is an operator error, not a bug. Say exactly what
     // is wrong and exit non-zero so the supervisor does not restart-loop on it.

@@ -118,6 +118,37 @@ If the gate does not pass within 45s, the deploy **rolls back automatically**
 and exits non-zero. It does not leave a broken release live for you to find
 later.
 
+## Migrations
+
+Schema changes are numbered SQL files in `apps/api/migrations/`, applied in
+filename order by `scripts/migrate.sh`. **`deploy.sh` runs them automatically**
+between staging the release and activating it, so the schema is never behind the
+code that is about to serve traffic.
+
+```bash
+./scripts/migrate.sh staging --dry-run   # what is pending, change nothing
+./scripts/migrate.sh staging             # apply
+```
+
+Rules, because these are the parts that are expensive to change later:
+
+- **Forward-only.** There are no down migrations. A rollback restores code,
+  never schema.
+- **Every migration must be additive for at least one release.** Since rollback
+  restores the previous code against the *current* schema, the schema has to
+  work for both versions during the window when either could be live. Add a
+  column, backfill, and stop reading the old one in a later release — do not
+  rename or drop in the same release that introduces the change.
+- **Never edit an applied migration.** It is recorded by filename in
+  `schema_migrations`, and two environments will silently disagree about the
+  schema. Write a new file.
+- Each file runs in a transaction together with the row that records it, so a
+  failure part-way leaves neither the schema change nor the bookkeeping behind.
+
+If a migration fails, `deploy.sh` stops before activating and the previous
+release keeps serving. That is deliberate: a failed migration is a code problem,
+and the running service is not the thing to break while you fix it.
+
 ## Rollback
 
 A release is an immutable timestamped directory; `current` is a symlink.
