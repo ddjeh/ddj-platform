@@ -1,0 +1,27 @@
+{
+  "name": "@ddj/api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The deployable service. Everything else in this repo exists to ship this.",
+  "type": "module",
+  "main": "./dist/server.js",
+  "scripts": {
+    "build": "node ../../scripts/write-build-meta.mjs && tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint src",
+    "dev": "node --watch --experimental-strip-types src/server.ts",
+    "start": "node dist/server.js",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@ddj/shared": "workspace:*",
+    "fastify": "^5.2.1",
+    "pg": "^8.13.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "@types/pg": "^8.11.10",
+    "typescript": "^5.7.3",
+    "vitest": "^2.1.8"
+  }
+}

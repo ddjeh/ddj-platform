@@ -1,0 +1,22 @@
+node_modules/
+dist/
+*.tsbuildinfo
+coverage/
+
+# Generated at build time by scripts/write-build-meta.mjs. Recording a commit
+# SHA in the repo would be a lie the moment it is committed.
+apps/api/build-meta.json
+
+# Local environment and secrets. Never commit .env files.
+.env
+.env.*
+!.env.example
+
+# Runtime state written by the deploy scripts
+.run/
+*.log
+
+# Editor / OS noise
+.DS_Store
+.idea/
+.vscode/

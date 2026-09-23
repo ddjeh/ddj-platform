@@ -1,0 +1,32 @@
+{
+  "name": "ddj-foundation",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The engineering baseline: repo, CI, tests, and the deploy path to staging and production.",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "pnpm@9.15.4",
+  "scripts": {
+    "preflight": "pnpm --filter @ddj/shared build",
+    "build": "pnpm run preflight && pnpm --filter @ddj/api build",
+    "typecheck": "pnpm run preflight && pnpm -r typecheck",
+    "lint": "eslint .",
+    "test": "pnpm run preflight && vitest run",
+    "dev:api": "pnpm --filter @ddj/api dev",
+    "start:api": "pnpm --filter @ddj/api start",
+    "ci": "./scripts/ci.sh",
+    "deploy:staging": "./scripts/deploy.sh staging",
+    "deploy:production": "./scripts/deploy.sh production",
+    "rollback": "./scripts/rollback.sh",
+    "clean": "pnpm -r exec rm -rf dist && rm -rf node_modules"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.18.0",
+    "eslint": "^9.18.0",
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.20.0",
+    "vitest": "^2.1.8"
+  }
+}
