@@ -3,12 +3,30 @@
 How a change gets from a branch to production. This describes the path that
 exists and is exercised, not an aspiration.
 
+## Deploys are manual
+
+Board decision, **2026-09-24**: nothing deploys automatically. Shipping is a
+person running a command and watching the health gate — the board rejected the
+card that would have wired a deploy target with *"per il momento non voglio che
+si facciano dei deploy in automatico"*, to be revisited later.
+
+No workflow deploys on push, and no systemd timer or path unit fires one. **That
+is the instruction, not a gap to close.** `docs/github.md` records the wiring a
+deploy job would need, so the work is ready to pick up the moment the board asks
+for it — and only then.
+
+`scripts/tests/no-auto-deploy.test.sh` enforces this and runs in CI. Adding a
+deploy step to a workflow fails the build with the file and line number, instead
+of quietly shipping to an environment nobody asked to deploy to.
+
 ## The short version
 
 ```
 branch -> pull request -> CI green -> merge to main -> deploy staging
        -> verify -> deploy production -> health gate -> done
 ```
+
+Every deploy step below is run by hand. Nothing in the chain fires on its own.
 
 ## 1. Branch
 
@@ -221,11 +239,14 @@ tail -f /var/log/ddj/production/api.log
 
 Recorded here rather than discovered later.
 
-- **No public ingress.** Both environments bind loopback on a host with a LAN
-  address. There is no reverse proxy, no TLS, and no public DNS pointing here.
-  "Deployed and reachable" currently means reachable from this host. Exposing
-  this needs a substrate decision (a public host, or a tunnel in front of this
-  one) plus a TLS terminator.
+- **No public ingress, and the decision is deferred by the board.** Both
+  environments bind loopback on a host with a LAN address. There is no reverse
+  proxy, no TLS, and no public DNS pointing here. "Deployed and reachable"
+  currently means reachable from this host. Exposing this needs a substrate
+  decision (a public host, or a tunnel in front of this one) plus a TLS
+  terminator — the board parked that decision on 2026-09-24 along with the
+  automatic-deploy question, so it is deliberately open rather than forgotten.
+  DDJ-3's "reachable" half stays unsatisfied until the board resumes it.
 - **No hosted CI run yet.** CI runs locally via `pnpm ci` and is green, and the
   repository now exists at `ddjeh/ddj-platform` with `origin` set. The push is
   rejected because the token has `repo` but not `workflow` scope, so there are

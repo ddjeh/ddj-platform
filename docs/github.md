@@ -136,10 +136,11 @@ backup and in every pasted `git remote -v`.
 
 ## What this does not fix
 
-**Production is still not publicly reachable.** GitHub gives us the repository
-and hosted CI. It is not a host, so it cannot serve the API. The success
-condition on DDJ-3 is "something is deployed to production and reachable", and
-the second half of that still needs one of:
+**Production is still not publicly reachable, and the board deferred picking a
+substrate for it on 2026-09-24.** GitHub gives us the repository and hosted CI.
+It is not a host, so it cannot serve the API. The success condition on DDJ-3 is
+"something is deployed to production and reachable", and the second half of that
+still needs one of:
 
 | Option | What it needs | Trade-off |
 | --- | --- | --- |
@@ -151,6 +152,16 @@ Staging and production both run on this host today (`:3001` and `:3002`,
 loopback). CI, the deploy path, and rollback all work against them.
 
 ## Once there is a deploy target
+
+**Deferred by the board on 2026-09-24.** The board rejected the card that would
+have wired this up — *"per il momento non voglio che si facciano dei deploy in
+automatico"* — so nothing below is to be built yet, and `docs/release.md` has the
+standing rule. Do not add a deploy job to a workflow until the board asks for
+one: `scripts/tests/no-auto-deploy.test.sh` runs in CI and fails the build if you
+do.
+
+This section is kept because the thinking is done and the decision is expected to
+be revisited, not because the work is waiting to be done.
 
 Two wirings, in order of how much they need from you:
 
