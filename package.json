@@ -14,7 +14,7 @@
     "typecheck": "pnpm run preflight && pnpm -r typecheck",
     "lint": "eslint .",
     "test": "pnpm run preflight && vitest run",
-    "test:shell": "./scripts/tests/github-bootstrap.test.sh",
+    "test:shell": "./scripts/test-shell.sh",
     "dev:api": "pnpm --filter @ddj/api dev",
     "start:api": "pnpm --filter @ddj/api start",
     "ci": "./scripts/ci.sh",
