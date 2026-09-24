@@ -51,9 +51,11 @@ Use `pnpm run ci`, not `pnpm ci` — `pnpm ci` is a pnpm built-in that errors wi
 | URL | http://127.0.0.1:3001 | http://127.0.0.1:3002 |
 | Deploy | `./scripts/deploy.sh staging` | `./scripts/deploy.sh production` |
 
-Both currently bind loopback only. See "Known gaps" in
-[docs/release.md](docs/release.md) — public ingress is not yet provisioned, and
-the board has deferred that decision.
+Both currently bind loopback only, so production is deployed and serving but
+**not reachable from the internet**. Public ingress is deferred by the board;
+"Known gaps" in [docs/release.md](docs/release.md) is where that decision is
+tracked, and it is worth reading before assuming it is forgotten — the monitor
+that would have resurfaced it was cleared when its ticket closed.
 
 **Deploys are manual and stay manual.** Nothing deploys on push; a person runs
 `./scripts/deploy.sh <environment>`. CI fails if a deploy step is ever wired into

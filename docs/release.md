@@ -239,14 +239,30 @@ tail -f /var/log/ddj/production/api.log
 
 Recorded here rather than discovered later.
 
-- **No public ingress, and the decision is deferred by the board.** Both
-  environments bind loopback on a host with a LAN address. There is no reverse
-  proxy, no TLS, and no public DNS pointing here. "Deployed and reachable"
-  currently means reachable from this host. Exposing this needs a substrate
-  decision (a public host, or a tunnel in front of this one) plus a TLS
-  terminator — the board parked that decision on 2026-09-24 along with the
-  automatic-deploy question, so it is deliberately open rather than forgotten.
-  DDJ-3's "reachable" half stays unsatisfied until the board resumes it.
+- **No public ingress. Production is deployed, and reachable only from this
+  host.** Both environments bind loopback on a host with a LAN address. There is
+  no reverse proxy, no TLS, and no public DNS pointing here. Exposing this needs
+  a substrate decision (a public host, or a tunnel in front of this one) plus a
+  TLS terminator. The board deferred that decision on 2026-09-24 along with the
+  automatic-deploy question, and declined a card for it — so do not raise one.
+  The option costing is written up in the `ingress-options` document on DDJ-11.
+
+- **Where the ingress decision is tracked — read this before assuming it is
+  forgotten.** DDJ-3 closed on 2026-09-24 with its "reachable" clause carved out
+  into DDJ-11; DDJ-11 closed the same day with the decision **parked, not
+  made**. Its scheduled Week-2 monitor was **cleared** when it closed
+  (`clearReason: "done"`), so nothing will resurface this on its own. **This
+  section is the tracker.** Raise it at the Week-2 review.
+
+  State this plainly rather than letting "done" imply otherwise: production is
+  genuinely deployed and serving, and it is **not reachable from the internet**.
+  Both halves of that sentence matter.
+
+  The cheapest path, when it is picked: a vhost on the proxy that already
+  terminates TLS for `paper.ddjeh.space`. It keeps Postgres where it is. The
+  alternative — a public host — is not one credential, because the database is
+  local: it means relocating or tunnelling the database *and* rebuilding a
+  release process that is host-native and working.
 - **Secrets are plain files** in `shared/.env`, mode 640, owned by the service
   user. Fine for config; revisit before anything sensitive lives there.
 
@@ -256,9 +272,12 @@ Kept because both were once real gaps with non-obvious causes, and the causes
 are the useful part.
 
 - **Hosted CI run.** *Closed 2026-09-24.* CI runs on every push at
-  `ddjeh/ddj-platform`, first run green:
-  [`35977284936`](https://github.com/ddjeh/ddj-platform/actions/runs/35977284936),
-  `conclusion: success` on `41614ce`. It had been blocked for a day because the
+  `ddjeh/ddj-platform`, green on both pushes made that day — which is the actual
+  claim, since one run does not show "every push":
+  [`35977284936`](https://github.com/ddjeh/ddj-platform/actions/runs/35977284936)
+  on `41614ce` and
+  [`35977535747`](https://github.com/ddjeh/ddj-platform/actions/runs/35977535747)
+  on `86ffb92`, both `conclusion: success`. It had been blocked for a day because the
   token had `repo` but not `workflow` scope — and GitHub rejects the **entire**
   push, not just the workflow file, when such a token touches
   `.github/workflows/`. `scripts/github-bootstrap.sh` now reads the scope list

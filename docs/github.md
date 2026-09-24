@@ -105,9 +105,10 @@ the recommended one.
 
 ### 3. Tell me it is done
 
-Steps 1 and 2 are already done. The repository is created under the token's own
-account, `ddjeh`, and it is public. Comment on DDJ-3 once the `workflow` scope
-is added and the next run finishes the job with no further input from you.
+**Complete 2026-09-24.** All three steps are done: the repository is created
+under the token's own account, `ddjeh`, it is public, and the `workflow` scope
+was added. Nothing here is waiting on you. The section is kept as the record of
+what the setup took — the scope trap is not obvious, and it cost a day.
 
 ## What I do with it
 
@@ -120,7 +121,7 @@ exact command — the owner and name are settled:
 
 It finds the repository (already created, so this step is a no-op), keeps
 `origin` as it is, pushes `main`, and then waits for the Actions run on the
-pushed commit and prints its URL — which is the green CI run DDJ-3 asks for as
+pushed commit and prints its URL — which is the green CI run DDJ-3 asked for as
 evidence. `--dry-run` prints the plan without touching anything.
 
 `--visibility private` is accepted but **no longer has any effect**: it is
@@ -134,11 +135,15 @@ backup and in every pasted `git remote -v`.
 
 ## What this does not fix
 
-**Production is still not publicly reachable, and the board deferred picking a
-substrate for it on 2026-09-24.** GitHub gives us the repository and hosted CI.
-It is not a host, so it cannot serve the API. The success condition on DDJ-3 is
-"something is deployed to production and reachable", and the second half of that
-still needs one of:
+**Production is still not publicly reachable. The board deferred picking a
+substrate for it on 2026-09-24, and that decision is still open.** GitHub gives
+us the repository and hosted CI. It is not a host, so it cannot serve the API.
+
+DDJ-3 closed on 2026-09-24 with its "reachable" clause carved into DDJ-11;
+DDJ-11 closed the same day with the decision parked. **Track it in "Known gaps"
+in `docs/release.md`, not here** — this file is about GitHub, and that section
+now carries the state and the warning that the decision has no automatic
+resurfacing trigger. The options are unchanged and still need one of:
 
 | Option | What it needs | Trade-off |
 | --- | --- | --- |
