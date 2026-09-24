@@ -86,6 +86,25 @@ api() {
 BODY_FILE="$(mktemp)"
 trap 'rm -f "$BODY_FILE"' EXIT
 
+# Is `name` one of the scopes in a GitHub scope list? The list is comma
+# separated and GitHub writes a space after each comma ("repo, workflow"), so
+# the space has to go before the exact match or every scope but the first is
+# reported as missing.
+has_scope() {
+  printf '%s' "$1" | tr -d ' ' | tr ',' '\n' | grep -qx "$2"
+}
+
+# Classic tokens report their scopes in a response header. Fine-grained tokens
+# do not send it at all, so an empty result means "cannot tell", not "no scopes".
+token_scopes() {
+  curl -sS -o /dev/null -D - -X GET \
+    -H "Authorization: Bearer $GITHUB_TOKEN" \
+    -H "Accept: application/vnd.github+json" \
+    https://api.github.com/user \
+  | tr -d '\r' \
+  | awk 'tolower($1) == "x-oauth-scopes:" { sub(/^[^:]*:[ ]*/, ""); print; exit }'
+}
+
 json_field() {
   # Read one string field without assuming jq is installed.
   node -e '
@@ -115,6 +134,30 @@ if [ "$DRY_RUN" = false ]; then
   esac
   [ -n "$LOGIN" ] || fail "Could not read the token's login from GitHub's response."
   ok "authenticated as $LOGIN"
+
+  # Catch a missing `workflow` scope here, before anything is created. GitHub
+  # rejects the whole push if the commits touch .github/workflows/ and the token
+  # lacks it, so without this check the run fails at the last step and leaves a
+  # repository behind. Cheaper to refuse up front than to half-finish.
+  if git ls-files '.github/workflows/*' | grep -q .; then
+    SCOPES="$(token_scopes)"
+    if [ -z "$SCOPES" ]; then
+      ok "scopes: not reported (fine-grained token); cannot pre-check 'workflow'"
+    elif has_scope "$SCOPES" workflow; then
+      ok "scopes: $SCOPES (workflow present)"
+    else
+      fail "the token is missing the 'workflow' scope, and this repository commits
+files under .github/workflows/. GitHub rejects the entire push without it, so
+nothing was created or pushed.
+
+  token scopes: $SCOPES
+
+Fix: open https://github.com/settings/tokens, open this token, tick 'workflow'
+next to 'repo', and update it. Then re-run this command. If it is a fine-grained
+token instead, give it Contents: Read and write and Workflows: Read and write
+for this repository."
+    fi
+  fi
 else
   ok "dry run: skipping authentication"
 fi

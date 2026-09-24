@@ -58,6 +58,13 @@ step "Test"
 pnpm test
 ok "tests passed"
 
+step "Test the shell tooling"
+# The scripts under scripts/ are part of the deploy path, so they are tested
+# too. They are bash, so they are tested with bash rather than dragged into the
+# TypeScript runner; see scripts/tests/ for what is covered and why.
+./scripts/tests/github-bootstrap.test.sh
+ok "shell tooling tests passed"
+
 step "Build"
 pnpm build
 ok "build succeeded"
