@@ -52,7 +52,12 @@ Use `pnpm run ci`, not `pnpm ci` — `pnpm ci` is a pnpm built-in that errors wi
 | Deploy | `./scripts/deploy.sh staging` | `./scripts/deploy.sh production` |
 
 Both currently bind loopback only. See "Known gaps" in
-[docs/release.md](docs/release.md) — public ingress is not yet provisioned.
+[docs/release.md](docs/release.md) — public ingress is not yet provisioned, and
+the board has deferred that decision.
+
+**Deploys are manual and stay manual.** Nothing deploys on push; a person runs
+`./scripts/deploy.sh <environment>`. CI fails if a deploy step is ever wired into
+a workflow — see "Deploys are manual" in [docs/release.md](docs/release.md).
 
 ## Endpoints
 
@@ -116,14 +121,15 @@ CI runs on every push via [.github/workflows/ci.yml](.github/workflows/ci.yml),
 which calls [scripts/ci.sh](scripts/ci.sh). The pipeline lives in the script so
 `pnpm run ci` reproduces it exactly on a laptop.
 
-The repository has no git remote yet, so CI has not run on a hosted runner. The
-pipeline itself passes locally.
-
-Getting it there is one command, once the `GITHUB_TOKEN` secret exists:
+The pipeline passes locally. It has not run on a hosted runner yet: the
+repository exists at `ddjeh/ddj-platform` and `origin` is set, but the push is
+rejected in full because `GITHUB_TOKEN` has `repo` without `workflow` — GitHub
+will not accept a push containing `.github/workflows/ci.yml` without it. That one
+scope is the whole remaining fix; then
 
 ```bash
-./scripts/github-bootstrap.sh --owner <org-or-user>
+./scripts/github-bootstrap.sh --owner ddjeh --name ddj-platform
 ```
 
-It creates the repository, pushes `main`, and prints the URL of the first
-Actions run. [docs/github.md](docs/github.md) has the token scopes and the rest.
+pushes `main` and prints the URL of the Actions run.
+[docs/github.md](docs/github.md) has the scopes and the rest.
