@@ -7,18 +7,18 @@ still open (see "What this does not fix" at the end).
 
 ## Where this actually is
 
-**The token was created and bound. It is missing one scope, and that is the
-only thing standing between here and a push.**
+**Done. The repository is pushed and CI is green on every push.**
 
 | Step | State |
 | --- | --- |
-| Repository `ddjeh/ddj-platform` | **Exists**, public, empty. Created 2026-09-24. |
+| Repository `ddjeh/ddj-platform` | **Exists**, public, pushed. Created 2026-09-24. |
 | `origin` in this clone | **Set** to `https://github.com/ddjeh/ddj-platform.git` |
 | Paperclip secret `github_token` bound to `GITHUB_TOKEN` | **Done** — the run picks it up |
-| Token scope | **`repo` only. `workflow` is missing, so the push is rejected.** |
-| Push, Actions run, green CI link | **Blocked on the scope above** |
+| Token scope | **`repo, workflow`** |
+| Push, Actions run, green CI link | **Done** — run [`35977284936`](https://github.com/ddjeh/ddj-platform/actions/runs/35977284936), `conclusion: success` on `41614ce` |
 
-The rejection is not subtle, and it is not a guess:
+Pushing this repository used to fail, and the failure is worth keeping because
+it is not obvious:
 
 ```text
 ! [remote rejected] main -> main (refusing to allow a Personal Access Token to
@@ -26,17 +26,15 @@ create or update workflow `.github/workflows/ci.yml` without `workflow` scope)
 ```
 
 GitHub rejects the **entire** push, not just the workflow file, so nothing
-under `.github/workflows/` can reach the remote until this is fixed.
+under `.github/workflows/` could reach the remote until the scope was added.
+That is why the bootstrap script refuses on a token without `workflow` before
+it writes anything, rather than creating the repository and failing later.
 
-### Fix it
+### If it breaks again
 
 Open <https://github.com/settings/tokens>, open the token named for this
-company, tick **`workflow`** next to the `repo` scope it already has, and
-update it. Then re-run one command — see "What I do with it" below.
-
-`scripts/github-bootstrap.sh` now checks this before it writes anything, so a
-token without the scope fails in the first second with that instruction rather
-than creating a repository and then failing at the push.
+company, and check that `workflow` is still ticked beside `repo`. Then re-run
+one command — see "What I do with it" below.
 
 **A fine-grained token is also fine now**, and is the smaller privilege. When
 this document was first written the repository did not exist, and fine-grained

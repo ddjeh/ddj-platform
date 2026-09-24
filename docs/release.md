@@ -247,15 +247,29 @@ Recorded here rather than discovered later.
   terminator — the board parked that decision on 2026-09-24 along with the
   automatic-deploy question, so it is deliberately open rather than forgotten.
   DDJ-3's "reachable" half stays unsatisfied until the board resumes it.
-- **No hosted CI run yet.** CI runs locally via `pnpm ci` and is green, and the
-  repository now exists at `ddjeh/ddj-platform` with `origin` set. The push is
-  rejected because the token has `repo` but not `workflow` scope, so there are
-  no Actions runs yet and no hosted green run to link. Adding the `workflow`
-  scope to the token is the whole of the remaining fix; then
-  `./scripts/github-bootstrap.sh --owner ddjeh --name ddj-platform` pushes and
-  waits for the run.
-- **No database.** `/health/ready` reports `skipped` because no
-  `DDJ_DATABASE_URL` is configured. The readiness plumbing is real and tested;
-  it has simply never had a dependency to check in a live environment.
 - **Secrets are plain files** in `shared/.env`, mode 640, owned by the service
   user. Fine for config; revisit before anything sensitive lives there.
+
+## Closed, and why they were open
+
+Kept because both were once real gaps with non-obvious causes, and the causes
+are the useful part.
+
+- **Hosted CI run.** *Closed 2026-09-24.* CI runs on every push at
+  `ddjeh/ddj-platform`, first run green:
+  [`35977284936`](https://github.com/ddjeh/ddj-platform/actions/runs/35977284936),
+  `conclusion: success` on `41614ce`. It had been blocked for a day because the
+  token had `repo` but not `workflow` scope — and GitHub rejects the **entire**
+  push, not just the workflow file, when such a token touches
+  `.github/workflows/`. `scripts/github-bootstrap.sh` now reads the scope list
+  from the response header and refuses before it writes anything.
+- **Database.** *Closed 2026-09-24.* Each environment has its own Postgres
+  database and its own `DDJ_DATABASE_URL`, so `/health/ready` reports a real
+  check instead of `skipped`:
+
+  ```json
+  {"status":"ready","checks":[{"name":"postgres","status":"ok","durationMs":8}]}
+  ```
+
+  One database per environment is deliberate: staging and production share a
+  host, and a staging write must not be able to reach a production row.

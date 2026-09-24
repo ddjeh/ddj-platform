@@ -121,15 +121,16 @@ CI runs on every push via [.github/workflows/ci.yml](.github/workflows/ci.yml),
 which calls [scripts/ci.sh](scripts/ci.sh). The pipeline lives in the script so
 `pnpm run ci` reproduces it exactly on a laptop.
 
-The pipeline passes locally. It has not run on a hosted runner yet: the
-repository exists at `ddjeh/ddj-platform` and `origin` is set, but the push is
-rejected in full because `GITHUB_TOKEN` has `repo` without `workflow` — GitHub
-will not accept a push containing `.github/workflows/ci.yml` without it. That one
-scope is the whole remaining fix; then
+The repository is at [ddjeh/ddj-platform](https://github.com/ddjeh/ddj-platform)
+and the pipeline is green on a hosted runner: [run
+`35977284936`](https://github.com/ddjeh/ddj-platform/actions/runs/35977284936),
+`conclusion: success` on `41614ce`. The job uploads a build artifact, so the
+commit is checkable against the tree.
 
 ```bash
 ./scripts/github-bootstrap.sh --owner ddjeh --name ddj-platform
 ```
 
-pushes `main` and prints the URL of the Actions run.
-[docs/github.md](docs/github.md) has the scopes and the rest.
+pushes `main` and prints the URL of the Actions run; it is idempotent, so running
+it again on a pushed repository is harmless.
+[docs/github.md](docs/github.md) has the token scopes and the rest.
