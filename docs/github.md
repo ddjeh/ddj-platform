@@ -1,14 +1,53 @@
 # GitHub: repository, CI, and the token
 
-The repository has no remote yet. Everything below is the one-time step that
-puts it on GitHub, plus what you need to hand over to make that happen.
-
 Written against the decision recorded on DDJ-3: **GitHub + Actions**. That
 decision settles two of DDJ-3's five bullets — a hosted repository and CI
 running on every push. It does **not** settle where production runs, which is
 still open (see "What this does not fix" at the end).
 
-## What you need to provide
+## Where this actually is
+
+**The token was created and bound. It is missing one scope, and that is the
+only thing standing between here and a push.**
+
+| Step | State |
+| --- | --- |
+| Repository `ddjeh/ddj-platform` | **Exists**, public, empty. Created 2026-09-24. |
+| `origin` in this clone | **Set** to `https://github.com/ddjeh/ddj-platform.git` |
+| Paperclip secret `github_token` bound to `GITHUB_TOKEN` | **Done** — the run picks it up |
+| Token scope | **`repo` only. `workflow` is missing, so the push is rejected.** |
+| Push, Actions run, green CI link | **Blocked on the scope above** |
+
+The rejection is not subtle, and it is not a guess:
+
+```text
+! [remote rejected] main -> main (refusing to allow a Personal Access Token to
+create or update workflow `.github/workflows/ci.yml` without `workflow` scope)
+```
+
+GitHub rejects the **entire** push, not just the workflow file, so nothing
+under `.github/workflows/` can reach the remote until this is fixed.
+
+### Fix it
+
+Open <https://github.com/settings/tokens>, open the token named for this
+company, tick **`workflow`** next to the `repo` scope it already has, and
+update it. Then re-run one command — see "What I do with it" below.
+
+`scripts/github-bootstrap.sh` now checks this before it writes anything, so a
+token without the scope fails in the first second with that instruction rather
+than creating a repository and then failing at the push.
+
+**A fine-grained token is also fine now**, and is the smaller privilege. When
+this document was first written the repository did not exist, and fine-grained
+tokens must be scoped to repositories that already exist — that was the only
+reason to insist on a classic one. It exists now. If you would rather replace
+the token than edit it: create a fine-grained token scoped to
+`ddjeh/ddj-platform` only, with **Contents: Read and write** and
+**Workflows: Read and write**, then swap the value in the same Paperclip
+secret. Nothing else changes.
+
+## Original setup, for reference
 
 One token. Nothing else — no account setup, no payment, no host configuration.
 
@@ -22,9 +61,11 @@ One token. Nothing else — no account setup, no payment, no host configuration.
 | Expiration | 90 days | Long enough to be useful, short enough to be rotated deliberately. Put the renewal date in the token note if you want a reminder. |
 | Scopes | `repo`, `workflow` | `repo` creates the repository and pushes to it. `workflow` is required to push anything under `.github/workflows/` — without it, GitHub rejects the push with a message about the workflow scope. |
 
-**Use a classic token, not a fine-grained one.** Fine-grained tokens have to be
-scoped to repositories that already exist, and this repository does not exist
-yet. That is the whole reason.
+**Why classic, when this was written.** Fine-grained tokens have to be scoped
+to repositories that already exist, and this repository did not exist yet. That
+was the whole reason, and it no longer applies — the repository exists now, so
+a fine-grained token scoped to it is the better choice. See "Where this
+actually is" above.
 
 ### 2. Add it to Paperclip as a secret
 
@@ -66,25 +107,28 @@ the recommended one.
 
 ### 3. Tell me it is done
 
-Comment on DDJ-3. The next run picks the secret up and finishes the job with no
-further input from you. If the token belongs to an organisation rather than
-your personal account, say so and name the org — the repository is created
-under the token's own account otherwise.
+Steps 1 and 2 are already done. The repository is created under the token's own
+account, `ddjeh`, and it is public. Comment on DDJ-3 once the `workflow` scope
+is added and the next run finishes the job with no further input from you.
 
 ## What I do with it
 
-One command, idempotent, safe to run twice:
+One command, idempotent, safe to run twice. With the scope fixed, this is the
+exact command — the owner and name are settled:
 
 ```bash
-./scripts/github-bootstrap.sh --owner <org-or-user> --name ddj-platform
+./scripts/github-bootstrap.sh --owner ddjeh --name ddj-platform
 ```
 
-It creates the repository, adds `origin`, pushes `main`, and then waits for the
-Actions run on the pushed commit and prints its URL — which is the green CI run
-DDJ-3 asks for as evidence. `--dry-run` prints the plan without touching
-anything. `--visibility private` is available; the default is `public`, because
-a public repository makes the CI run linkable to anyone, and this repository
-contains no client code yet. Say so if you want it private instead.
+It finds the repository (already created, so this step is a no-op), keeps
+`origin` as it is, pushes `main`, and then waits for the Actions run on the
+pushed commit and prints its URL — which is the green CI run DDJ-3 asks for as
+evidence. `--dry-run` prints the plan without touching anything.
+
+`--visibility private` is accepted but **no longer has any effect**: it is
+applied when the repository is created, and this one already exists as public.
+Changing it now is a one-click change in the repository's Settings if the
+client code that lands later needs it.
 
 The token is passed to `git push` through a one-shot credential helper, never
 written into the remote URL. A token in `.git/config` is a token in every
@@ -129,7 +173,8 @@ job, so a red build cannot reach an environment.
 | --- | --- | --- |
 | `GitHub rejected the token (401)` | Token expired, revoked, or mistyped when saved | Create a new one and update the secret value; the version history keeps the old value audit-able |
 | `GitHub refused to create the repo (403)` | Missing `repo` scope, or no permission to create repos in the org | Re-issue with `repo`; for an org, check your role there |
-| Push rejected with a message about the `workflow` scope | Token lacks `workflow` | Re-issue the token with both `repo` and `workflow` |
+| `the token is missing the 'workflow' scope` | Token was issued with `repo` only | Open <https://github.com/settings/tokens>, tick **`workflow`**, update. The script checks this before writing anything, so nothing is half-created |
+| Push rejected with a message about the `workflow` scope | Only possible if the pre-check was bypassed | Same fix as above; this is the failure the pre-check exists to prevent |
 | `the working tree is dirty` | Uncommitted changes | Commit or stash them; the script refuses to push a tree that is not what the commit says |
 | No Actions run appears | Workflows are disabled on the repo, or the push created the repo but not the branch | Check the Actions tab; it prints the exact URL to look at |
 | CI green locally, red on GitHub | Node or pnpm version drift | Both are pinned in `.github/workflows/ci.yml` and `package.json`; compare the versions in the failing step's log |

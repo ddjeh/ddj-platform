@@ -226,9 +226,13 @@ Recorded here rather than discovered later.
   "Deployed and reachable" currently means reachable from this host. Exposing
   this needs a substrate decision (a public host, or a tunnel in front of this
   one) plus a TLS terminator.
-- **No GitHub remote.** CI is written and runs locally via `pnpm ci`, but the
-  repository has no remote and no Actions runs yet, so there is no hosted green
-  run to link. Pushing needs a credential with `repo` and `workflow` scope.
+- **No hosted CI run yet.** CI runs locally via `pnpm ci` and is green, and the
+  repository now exists at `ddjeh/ddj-platform` with `origin` set. The push is
+  rejected because the token has `repo` but not `workflow` scope, so there are
+  no Actions runs yet and no hosted green run to link. Adding the `workflow`
+  scope to the token is the whole of the remaining fix; then
+  `./scripts/github-bootstrap.sh --owner ddjeh --name ddj-platform` pushes and
+  waits for the run.
 - **No database.** `/health/ready` reports `skipped` because no
   `DDJ_DATABASE_URL` is configured. The readiness plumbing is real and tested;
   it has simply never had a dependency to check in a live environment.
