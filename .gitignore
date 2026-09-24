@@ -24,3 +24,9 @@ apps/api/build-meta.json
 .DS_Store
 .idea/
 .vscode/
+
+# Per-machine agent settings. The runtime regenerates this on every host, and
+# the committed copy named internal host paths and agent ids, so it was removed
+# from the index before the first push. `--cached` only: the live file stays on
+# disk, the repository just stops carrying it.
+.claude/settings.local.json
