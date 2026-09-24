@@ -62,8 +62,14 @@ jobs:
   # environment yet: there is no production substrate provisioned, and a deploy
   # job that silently no-ops is worse than an obviously absent one.
   #
-  # When the production target is chosen, this job needs a secret and these lines:
+  # GitHub was chosen as the repository and CI substrate, which is this file.
+  # It is not a host, so it does not answer where production runs. Until that
+  # is decided this job stays absent rather than fake.
+  #
+  # When the target is chosen, the job needs:
   #   needs: build-and-test
   #   if: github.ref == 'refs/heads/main'
   #   environment: production
-  # and a step that calls scripts/deploy.sh with the artifact above.
+  # and a step that calls scripts/deploy.sh with the artifact above — either on
+  # a hosted runner with the host's CLI and a deploy token, or on this host as a
+  # self-hosted runner. docs/github.md has both wirings and their trade-offs.

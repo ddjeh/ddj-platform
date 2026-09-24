@@ -41,6 +41,8 @@ Use `pnpm run ci`, not `pnpm ci` — `pnpm ci` is a pnpm built-in that errors wi
 - **[docs/release.md](docs/release.md)** — how a change gets from a branch to
   production, including rollback.
 - **[docs/conventions.md](docs/conventions.md)** — how we write code here.
+- **[docs/github.md](docs/github.md)** — the token, the remote, and what is
+  still needed to make production reachable.
 
 ## What is running
 
@@ -105,7 +107,7 @@ apps/api/migrations/   forward-only, numbered SQL migrations
 packages/shared/       contracts the API and its consumers agree on
 scripts/               build, CI, deploy, migrate, rollback
 deploy/                systemd units
-docs/                  release process and conventions
+docs/                  release process, conventions, GitHub setup
 ```
 
 ## CI
@@ -116,3 +118,12 @@ which calls [scripts/ci.sh](scripts/ci.sh). The pipeline lives in the script so
 
 The repository has no git remote yet, so CI has not run on a hosted runner. The
 pipeline itself passes locally.
+
+Getting it there is one command, once the `GITHUB_TOKEN` secret exists:
+
+```bash
+./scripts/github-bootstrap.sh --owner <org-or-user>
+```
+
+It creates the repository, pushes `main`, and prints the URL of the first
+Actions run. [docs/github.md](docs/github.md) has the token scopes and the rest.

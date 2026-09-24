@@ -16,6 +16,10 @@ apps/api/build-meta.json
 .run/
 *.log
 
+# Transient working notes written into the checkout by the agent runtime.
+# Local state, never part of the repository's history.
+.paperclip-resume-*.md
+
 # Editor / OS noise
 .DS_Store
 .idea/
